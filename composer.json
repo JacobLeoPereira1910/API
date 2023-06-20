@@ -1,0 +1,16 @@
+{
+    "name": "ljacob/api",
+    "type": "n",
+    "minimum-stability": "beta",
+    "autoload": {
+        "psr-4": {
+            "app\\models\\": "app/models/",
+            "app\\controllers\\": "app/controllers/",
+            "app\\database\\": "app/database/"
+        }
+    },
+    "require": {
+        "firebase/php-jwt": "^6.5",
+        "vlucas/phpdotenv": "^5.5"
+    }
+}
