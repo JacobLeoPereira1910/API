@@ -82,6 +82,7 @@ class TotalRefeicoesModel
 
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // ...
 
         $data = [];
         foreach ($results as $row) {
@@ -120,7 +121,6 @@ class TotalRefeicoesModel
                 ];
             }
         }
-        $item = json_encode($data);
         return $data;
     }
 }

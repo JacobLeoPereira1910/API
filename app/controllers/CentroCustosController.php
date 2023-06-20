@@ -39,8 +39,7 @@ class CentroCustosController
     {
         try {
             $token = $this->getTokenFromRequest();
-            $user = $this->verifyToken($token);
-
+        
             $cd_ccusto_filter = $this->getParameter('cd_ccusto');
 
             $model = new CentroCustosModel();

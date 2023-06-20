@@ -4,9 +4,9 @@ namespace app\models;
 
 use PDO;
 
-class TotalRefeicoesModel
+class GetTotalAmountCoffeModel
 {
-    public function getVMensalRefeicaoOfertada($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
+    public function getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
     {
         $pgconnection = new PDO("pgsql:dbname=bp_analytics;host=172.32.100.24", "bomprato", "bp050713");
         $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -17,18 +17,12 @@ class TotalRefeicoesModel
             vi_fipe_refeicoes.date_actual,
             vi_fipe_refeicoes.codigo_unidade,
             vi_fipe_refeicoes.qtd_cafe,
-            vi_fipe_refeicoes.qtd_almoco,
-            vi_fipe_refeicoes.qtd_jantar,
             vi_fipe_refeicoes_movel.id_origem AS id_origem_movel,
             vi_fipe_refeicoes_movel.cd_ccusto AS cd_ccusto_movel,
             vi_fipe_refeicoes_movel.codigo_unidade AS codigo_unidade_movel,
             vi_fipe_refeicoes_movel.date_actual AS date_actual_movel,
             vi_fipe_refeicoes_movel.qtd_cafe AS qtd_cafe_movel,
-            vi_fipe_refeicoes_movel.qtd_almoco AS qtd_almoco_movel,
-            vi_fipe_refeicoes_movel.qtd_jantar AS qtd_jantar_movel,
-            SUM(COALESCE(vi_fipe_refeicoes.qtd_cafe, 0) + COALESCE(vi_fipe_refeicoes.qtd_almoco, 0) + COALESCE(vi_fipe_refeicoes.qtd_jantar, 0)) AS refeicoes_bomprato,
-            SUM(COALESCE(vi_fipe_refeicoes_movel.qtd_cafe, 0) + COALESCE(vi_fipe_refeicoes_movel.qtd_almoco, 0) + COALESCE(vi_fipe_refeicoes_movel.qtd_jantar, 0)) AS refeicoes_bomprato_movel,
-            SUM(COALESCE(vi_fipe_refeicoes.qtd_cafe, 0) + COALESCE(vi_fipe_refeicoes.qtd_almoco, 0) + COALESCE(vi_fipe_refeicoes.qtd_jantar, 0) + COALESCE(vi_fipe_refeicoes_movel.qtd_cafe, 0) + COALESCE(vi_fipe_refeicoes_movel.qtd_almoco, 0) + COALESCE(vi_fipe_refeicoes_movel.qtd_jantar, 0)) AS total_refeicoes
+            SUM(COALESCE(vi_fipe_refeicoes.qtd_cafe, 0)) + SUM(COALESCE(vi_fipe_refeicoes_movel.qtd_cafe, 0)) AS total_cafe
         FROM 
             vi_fipe_refeicoes
         LEFT JOIN 
@@ -44,21 +38,18 @@ class TotalRefeicoesModel
 
         $query .= " AND (vi_fipe_refeicoes.date_actual >= :ano_mes_inicio OR vi_fipe_refeicoes_movel.date_actual >= :ano_mes_inicio)
             AND (vi_fipe_refeicoes.date_actual <= :ano_mes_fim OR vi_fipe_refeicoes_movel.date_actual <= :ano_mes_fim)
-        GROUP BY 
-            vi_fipe_refeicoes.id_origem,
-            vi_fipe_refeicoes.cd_ccusto,
-            vi_fipe_refeicoes.date_actual,
-            vi_fipe_refeicoes.codigo_unidade,
-            vi_fipe_refeicoes.qtd_cafe,
-            vi_fipe_refeicoes.qtd_almoco,
-            vi_fipe_refeicoes.qtd_jantar,
-            vi_fipe_refeicoes_movel.id_origem,
-            vi_fipe_refeicoes_movel.cd_ccusto,
-            vi_fipe_refeicoes_movel.codigo_unidade,
-            vi_fipe_refeicoes_movel.date_actual,
-            vi_fipe_refeicoes_movel.qtd_cafe,
-            vi_fipe_refeicoes_movel.qtd_almoco,
-            vi_fipe_refeicoes_movel.qtd_jantar";
+            GROUP BY 
+    vi_fipe_refeicoes.id_origem,
+    vi_fipe_refeicoes.cd_ccusto,
+    vi_fipe_refeicoes.date_actual,
+    vi_fipe_refeicoes.codigo_unidade,
+    vi_fipe_refeicoes.qtd_cafe,
+    vi_fipe_refeicoes_movel.id_origem,
+    vi_fipe_refeicoes_movel.cd_ccusto,
+    vi_fipe_refeicoes_movel.codigo_unidade,
+    vi_fipe_refeicoes_movel.date_actual,
+    vi_fipe_refeicoes_movel.qtd_cafe
+";
 
         $stmt = $pgconnection->prepare($query);
 
@@ -87,36 +78,34 @@ class TotalRefeicoesModel
         foreach ($results as $row) {
             $id_origem = $row['id_origem'];
             $cd_ccusto = $row['cd_ccusto'];
-            $codigo_unidade = $row['codigo_unidade'];
             $date_actual = $row['date_actual'];
+            $qtd_cafe = $row['qtd_cafe'];
             $cd_ccusto_movel = $row['cd_ccusto_movel'];
             $id_origem_movel = $row['id_origem_movel'];
-            $codigo_unidade_movel = $row['codigo_unidade_movel'];
             $date_actual_movel = $row['date_actual_movel'];
-            $refeicoes_bomprato = $row['refeicoes_bomprato'];
-            $refeicoes_bomprato_movel = $row['refeicoes_bomprato_movel'];
-            $totalRefeicoes = $row['total_refeicoes'];
+            $qtd_cafe_movel = $row['qtd_cafe_movel'];
+            $totalCafe = $row['total_cafe'];
 
             if ($ccusto == "bom_prato") {
                 $data[] = [
                     "id_origem" => $id_origem,
                     "date_actual" => $date_actual,
                     "cd_ccusto" => $cd_ccusto,
-                    "quantitativo" => $totalRefeicoes,
+                    "quantitativo" => $qtd_cafe,
                 ];
             } elseif ($ccusto == "bom_prato_movel") {
                 $data[] = [
                     "id_origem" => $id_origem_movel,
                     "date_actual" => $date_actual_movel,
                     "cd_ccusto" => $cd_ccusto_movel,
-                    "quantitativo" => $totalRefeicoes,
+                    "quantitativo" => $qtd_cafe_movel,
                 ];
             } elseif ($ccusto === null) { // Adicionado novo bloco elseif para tratar ccusto igual a null
                 $data[] = [
                     "id_origem" => $id_origem,
                     "date_actual" => $date_actual,
                     "cd_ccusto" => $cd_ccusto,
-                    "quantitativo" => $totalRefeicoes,
+                    "quantitativo" => $totalCafe,
                 ];
             }
         }

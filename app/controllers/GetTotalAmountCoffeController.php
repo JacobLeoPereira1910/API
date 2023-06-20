@@ -3,11 +3,10 @@
 namespace app\controllers;
 
 use Exception;
-use app\models\CentroCustosModel;
 use app\models\UserModel;
-use app\models\TotalRefeicoesModel;
+use app\models\GetTotalAmountCoffeModel;
 
-class TotalRefeicaoController
+class GetTotalAmountCoffeController
 {
     public function getTokenFromRequest()
     {
@@ -52,8 +51,8 @@ class TotalRefeicaoController
 
             $cd_ccusto_filter = $this->getParameter('cd_ccusto');
 
-            $model = new TotalRefeicoesModel();
-            $result = $model->getVMensalRefeicaoOfertada($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim);
+            $model = new getTotalAmountCoffeModel();
+            $result = $model->getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim);
 
             $this->sendResponse($result);
         } catch (Exception $e) {
