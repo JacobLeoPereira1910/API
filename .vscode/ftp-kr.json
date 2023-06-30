@@ -1,0 +1,16 @@
+{
+    "host": "172.32.101.22",
+    "username": "pagina_bp",
+    "password": "pagina",
+    "remotePath": "/ws/fipe",
+    "protocol": "ftp",
+    "port": 0,
+    "fileNameEncoding": "utf8",
+    "autoUpload": true,
+    "autoDelete": false,
+    "autoDownload": false,
+    "ignore": [
+        ".git",
+        "/.vscode"
+    ]
+}

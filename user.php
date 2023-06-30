@@ -1,67 +1,70 @@
 <?php
-const ALLOW_ORIGIN = "Access-Control-Allow-Origin";
-const ALLOW_HEADERS = "Access-Control-Allow-Headers";
-const METHOD_NOT_ALLOWED = 405;
-const JWT_ALGORITHM = 'HS256';
+require './GenerateToken.php';
+?>
+<style>
+    .first-container {
+        padding: 2rem 0 2rem;
+        margin: 2rem 0 2rem;
 
-header(ALLOW_ORIGIN . ": *");
-header(ALLOW_HEADERS . ": Authorization, Content-Type, x-xsrf-token, x_csrftoken, Cache-Control, X-Requested-With");
-
-require '../vendor/autoload.php';
-
-use Firebase\JWT\JWT;
-use app\database\Connection;
-use Firebase\JWT\Key;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_SERVER['PHP_AUTH_USER'];
-    $password = $_SERVER['PHP_AUTH_PW'];
-
-    if (!$email || !$password) {
-        http_response_code(400);
-        echo json_encode(["error" => "Os campos email e senha são obrigatórios"]);
-        exit;
     }
+</style>
+<!DOCTYPE html>
+<html lang="en">
 
-    $header = getallheaders();
-    $JWT = authenticateUser($email, $password);
-    echo json_encode($JWT);
-} else {
-    http_response_code(METHOD_NOT_ALLOWED);
-    echo json_encode(["error" => "Método não permitido"]);
-    exit;
-}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+    <title></title>
+</head>
 
-function authenticateUser($email, $password)
-{
-    $dotenv = Dotenv\Dotenv::createImmutable('C:/xampp/htdocs/jwt');
-    $dotenv->load();
-    $key = $_ENV['KEY'];
+<body>
+    <div class="first-container container">
+        <div class="row">
+            <!-- Modal -->
+            <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            ...
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary">Understood</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    $pdo = Connection::connect();
-    $statement = $pdo->prepare("SELECT * FROM users WHERE email = :email");
-    $statement->bindValue(":email", $email);
-    $statement->execute();
-    $userFound = $statement->fetchAll();
+
+            <div class="container">
+                <div class="row">
+                    <div class="col">
+                        <button type="button" class="btn btn-primary" id="create-token">Gerar Token</button>
+                    </div>
+
+                </div>
+
+            </div>
 
 
-    if (count($userFound) > 0) {
-        $payload = [
-            "exp" => time() + 6000,
-            "iat" => time(),
-            "email" => $email
-        ];
+        </div>
+    </div>
 
-        $token = JWT::encode($payload, $key, JWT_ALGORITHM);
+</body>
 
-        // Criar o array de resposta
-        $response = [
-            "token" => $token
-        ];
+</html>
 
-        return $response;
-    } else {
-        http_response_code(401);
-        return ["error" => "Credenciais inválidas"];
-    }
-}
+<script>
+    const button = document.getElementById('create-token')
+
+    $('#create-token').click(function() {
+        $(this).attr('data-bs-target', '#staticBackdrop')
+    })
+</script>

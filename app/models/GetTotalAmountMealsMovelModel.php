@@ -3,14 +3,15 @@
 namespace app\models;
 
 use PDO;
+use app\database\PgConnection;
 
 class GetTotalAmountMealsMovelModel
 {
     public function getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
     {
+
         $pgconnection = new PDO("pgsql:dbname=bp_analytics;host=172.32.100.24", "bomprato", "bp050713");
         $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
         $query = "SELECT
             id_origem,
             cd_ccusto,

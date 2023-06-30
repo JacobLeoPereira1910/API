@@ -3,6 +3,8 @@
 namespace app\models;
 
 use PDO;
+use app\database\PgConnection;
+
 
 class GetTotalAmountLunchModel
 {

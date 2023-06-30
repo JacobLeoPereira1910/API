@@ -11,7 +11,7 @@ class UserModel
 {
     public function getUserFromToken($token)
     {
-        $dotenv = Dotenv::createImmutable('C:/xampp/htdocs/api');
+        $dotenv = Dotenv::createImmutable(dirname(dirname(__DIR__)));
         $dotenv->load();
         $key = $_ENV['KEY'];
 
