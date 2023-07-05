@@ -7,11 +7,21 @@ use app\database\PgConnection;
 
 class GetTotalAmountCoffeModel
 {
-    public function getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
+    public function getMonthValue($cd_ccusto_filter = [], $ano_mes_inicio, $ano_mes_fim)
     {
+        $data_inicio = date('Y-m-d', strtotime($ano_mes_inicio . '01'));
+        $data_fim = date('Y-m-d', strtotime($ano_mes_fim . '01'));
+
+        if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
+            $parametros = implode(',', array_map(function ($item) {
+                return "'" . $item . "'";
+            }, $cd_ccusto_filter));
+        } else {
+            $parametros = '';
+        }
+
         $pgconnection = new PDO("pgsql:dbname=bp_analytics;host=172.32.100.24", "bomprato", "bp050713");
         $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
 
         $query = "SELECT 
             vi_fipe_refeicoes.id_origem,
@@ -35,11 +45,11 @@ class GetTotalAmountCoffeModel
         if (empty($cd_ccusto_filter)) {
             $query .= "(vi_fipe_refeicoes.cd_ccusto IS NULL OR vi_fipe_refeicoes_movel.cd_ccusto IS NULL)";
         } else {
-            $query .= "(vi_fipe_refeicoes.cd_ccusto = :cd_ccusto OR vi_fipe_refeicoes_movel.cd_ccusto = :cd_ccusto)";
+            $query .= "(vi_fipe_refeicoes.cd_ccusto IN ($parametros) OR vi_fipe_refeicoes_movel.cd_ccusto IN ($parametros))";
         }
 
-        $query .= " AND (vi_fipe_refeicoes.date_actual >= :ano_mes_inicio OR vi_fipe_refeicoes_movel.date_actual >= :ano_mes_inicio)
-            AND (vi_fipe_refeicoes.date_actual <= :ano_mes_fim OR vi_fipe_refeicoes_movel.date_actual <= :ano_mes_fim)
+        $query .= " AND (vi_fipe_refeicoes.date_actual >= '$data_inicio' OR vi_fipe_refeicoes_movel.date_actual >= '$data_inicio')
+            AND (vi_fipe_refeicoes.date_actual <= '$data_fim' OR vi_fipe_refeicoes_movel.date_actual <= '$data_fim')
             GROUP BY 
                 vi_fipe_refeicoes.id_origem,
                 vi_fipe_refeicoes.cd_ccusto,
@@ -54,16 +64,25 @@ class GetTotalAmountCoffeModel
 
         $stmt = $pgconnection->prepare($query);
 
-
-        if (!empty($cd_ccusto_filter)) {
-            $stmt->bindParam(':cd_ccusto', $cd_ccusto_filter, PDO::PARAM_STR);
-        }
-
-        $stmt->bindParam(':ano_mes_inicio', $ano_mes_inicio, PDO::PARAM_STR);
-        $stmt->bindParam(':ano_mes_fim', $ano_mes_fim, PDO::PARAM_STR);
-
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $filter = '';
+        if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
+            $filter = implode(',', array_map(function ($item) {
+                return "'" . $item . "'";
+            }, $cd_ccusto_filter));
+        }
+
+        $ccusto = null;
+
+        if (!empty($filter)) {
+            if (strpos($filter, "000000002") !== false) {
+                $ccusto = "bom_prato_movel";
+            } else {
+                $ccusto = "bom_prato";
+            }
+        }
 
         $data = [];
         foreach ($results as $row) {
@@ -81,26 +100,26 @@ class GetTotalAmountCoffeModel
             $date_movel = $date_actual_movel; // Assign the string value to a separate variable
             $ano_mes_movel = date("Ym", strtotime($date_movel));
 
-            if ($cd_ccusto_filter === null) {
+            if (!empty($ccusto) == 'bom_prato') {
                 $data[] = [
                     "id_origem" => $id_origem,
                     "date_actual" => $ano_mes,
                     "cd_ccusto" => $cd_ccusto,
-                    "quantitativo" => $totalCafe,
+                    "quantitativo" => $qtd_cafe,
                 ];
-            } elseif (strpos($cd_ccusto_filter, "000000002") !== false) {
+            } elseif(!empty($ccusto == 'bom_prato_movel')) {
                 $data[] = [
                     "id_origem" => $id_origem_movel,
                     "date_actual" => $ano_mes_movel,
                     "cd_ccusto" => $cd_ccusto_movel,
                     "quantitativo" => $qtd_cafe_movel,
                 ];
-            } else {
+            } elseif(!empty($ccusto === null)) {
                 $data[] = [
                     "id_origem" => $id_origem,
                     "date_actual" => $ano_mes,
                     "cd_ccusto" => $cd_ccusto,
-                    "quantitativo" => $qtd_cafe,
+                    "quantitativo" => $totalCafe,
                 ];
             }
         }

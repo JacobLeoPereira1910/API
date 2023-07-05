@@ -10,10 +10,14 @@ class GetTotalAmountCoffeController
 {
     public function getTokenFromRequest()
     {
-        if (!isset($_POST['JWT'])) {
-            throw new Exception('Token não fornecido no cabeçalho de autorização', 401);
+        $postData = file_get_contents('php://input');
+        $requestBody = json_decode($postData, true);
+
+        if (!isset($requestBody['JWT'])) {
+            throw new Exception('Token não fornecido no corpo da solicitação', 401);
         }
-        return $_POST['JWT'];
+
+        return $requestBody['JWT'];
     }
 
     public function verifyToken($token)
@@ -24,13 +28,19 @@ class GetTotalAmountCoffeController
 
     public function getParameter($name)
     {
+        $postData = file_get_contents('php://input');
+        if (empty($postData)) {
+            return null;
+        }
+        $requestBody = json_decode($postData, true);
+
         switch ($name) {
             case 'cd_ccusto':
-                return isset($_POST['cd_ccusto']) ? $_POST['cd_ccusto'] : null;
+                return isset($requestBody['ccusto']) ? $requestBody['ccusto'] : null;
             case 'ano_mes_inicio':
-                return isset($_POST['ano_mes_inicio']) ? $_POST['ano_mes_inicio'] : null;
+                return isset($requestBody['ano_mes_inicio']) ? $requestBody['ano_mes_inicio'] : null;
             case 'ano_mes_fim':
-                return isset($_POST['ano_mes_fim']) ? $_POST['ano_mes_fim'] : null;
+                return isset($requestBody['ano_mes_fim']) ? $requestBody['ano_mes_fim'] : null;
             default:
                 return null;
         }
@@ -40,7 +50,6 @@ class GetTotalAmountCoffeController
     {
         try {
             $token = $this->getTokenFromRequest();
-            $user = $this->verifyToken($token);
 
             $ano_mes_inicio = $this->getParameter('ano_mes_inicio') ?? null;
             $ano_mes_fim = $this->getParameter('ano_mes_fim') ?? null;
@@ -51,7 +60,7 @@ class GetTotalAmountCoffeController
 
             $cd_ccusto_filter = $this->getParameter('cd_ccusto');
 
-            $model = new getTotalAmountCoffeModel();
+            $model = new GetTotalAmountCoffeModel();
             $result = $model->getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim);
 
             $this->sendResponse($result);

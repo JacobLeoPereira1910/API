@@ -6,12 +6,24 @@ use PDO;
 
 class GetAmountServiceVivaLeiteModel
 {
-    public function getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
+    public function getMonthValue($cd_ccusto_filter = [], $ano_mes_inicio, $ano_mes_fim)
     {
+
+        $data_inicio = date('Y-m-d', strtotime($ano_mes_inicio . '01'));
+        $data_fim = date('Y-m-d', strtotime($ano_mes_fim . '01'));
+
+        if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
+            $parametros = implode(',', array_map(function ($item) {
+                return "'" . $item . "'";
+            }, $cd_ccusto_filter));
+        } else {
+            $parametros = '';
+        }
+
         try {
             // Cria uma instância de conexão com o banco de dados
             $pgconnection = new PDO("pgsql:dbname=bp_analytics;host=172.32.100.24", "bomprato", "bp050713");
-        $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             // Monta a consulta SQL
             $query = "SELECT
@@ -25,27 +37,20 @@ class GetAmountServiceVivaLeiteModel
                     date_actual >= :ano_mes_inicio AND date_actual <= :ano_mes_fim";
 
             if (!empty($cd_ccusto_filter)) {
-                $query .= " AND cd_ccusto = :cd_ccusto";
+                $query .= " AND cd_ccusto in ($parametros)";
             }
 
             $query .= " ORDER BY date_actual";
 
-            // Prepara e executa a consulta
             $stmt = $pgconnection->prepare($query);
 
-            $stmt->bindParam(':ano_mes_inicio', $ano_mes_inicio, PDO::PARAM_STR);
-            $stmt->bindParam(':ano_mes_fim', $ano_mes_fim, PDO::PARAM_STR);
-
-            if (!empty($cd_ccusto_filter)) {
-                $stmt->bindParam(':cd_ccusto', $cd_ccusto_filter, PDO::PARAM_STR);
-            }
+            $stmt->bindParam(':ano_mes_inicio', $data_inicio, PDO::PARAM_STR);
+            $stmt->bindParam(':ano_mes_fim', $data_fim, PDO::PARAM_STR);
 
             $stmt->execute();
 
-            // Obtém os resultados da consulta
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Formata os resultados em um array de dados
             $data = [];
             foreach ($results as $row) {
                 $id_origem = $row['id_origem'];

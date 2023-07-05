@@ -5,12 +5,12 @@ namespace app\models;
 use PDO;
 use Exception;
 
-class ConsultaProcessoCentroCustoModel
+class GetTotalAmountProcessesCCustoSegModel
 {
-    public function GetProcessoCentrosCustos($cd_ccusto_filter = [], $ano_inicio, $ano_fim)
+    public function getMonthValue($cd_ccusto_filter = [], $ano_mes_inicio, $ano_mes_fim)
     {
-        $data_inicio = date('Y-m-d', strtotime($ano_inicio . '01'));
-        $data_fim = date('Y-m-d', strtotime($ano_fim . '01'));
+        $data_inicio = date('Y-m-d', strtotime($ano_mes_inicio . '01'));
+        $data_fim = date('Y-m-d', strtotime($ano_mes_fim . '01'));
 
         if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
             $cd_ccusto_filter = array_map(function ($item) {
@@ -42,17 +42,19 @@ class ConsultaProcessoCentroCustoModel
 
             $data = [];
 
-            foreach ($results as $key => $row) {
-                $data[] = array(
-                    "ano_mes_ini"       => $row['data_inicio'],
-                    "ano_mes_fim"       => $row['data_final'],
+            foreach($results as $row) {
+                $date_ini = date('Ym', strtotime($row['data_inicio']));
+                $date_end = date('Ym', strtotime($row['data_final']));
+                $data = [
+                    "ano_mes_ini"       => $date_ini,
+                    "ano_mes_fim"       => $date_end,
                     "cd_uge"            => $row['cd_uge'],
                     "id_origem"         => $row['id_origem'],
                     "cd_ccusto"         => $row['cd_ccusto'],
                     "numero_processo"   => $row['num_processo']
-                );
-            }
+                ];
 
+            }
             return $data;
         } catch (Exception $e) {
             // Handle the exception here or throw it to the higher level as needed

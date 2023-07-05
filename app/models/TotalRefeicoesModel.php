@@ -7,10 +7,21 @@ use app\database\PgConnection;
 
 class TotalRefeicoesModel
 {
-    public function getVMensalRefeicaoOfertada($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
+    public function getVMensalRefeicaoOfertada($cd_ccusto_filter = [], $ano_mes_inicio, $ano_mes_fim)
     {
         $pgconnection = new PDO("pgsql:dbname=bp_analytics;host=172.32.100.24", "bomprato", "bp050713");
         $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $data_inicio = date('Y-m-d', strtotime($ano_mes_inicio . '01'));
+        $data_fim = date('Y-m-d', strtotime($ano_mes_fim . '01'));
+
+        if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
+            $parametros = implode(',', array_map(function ($item) {
+                return "'" . $item . "'";
+            }, $cd_ccusto_filter));
+        } else {
+            $parametros = '';
+        }
 
         $query = "SELECT 
             vi_fipe_refeicoes.id_origem,
@@ -40,7 +51,7 @@ class TotalRefeicoesModel
         if (empty($cd_ccusto_filter)) {
             $query .= "(vi_fipe_refeicoes.cd_ccusto IS NULL OR vi_fipe_refeicoes_movel.cd_ccusto IS NULL)";
         } else {
-            $query .= "(vi_fipe_refeicoes.cd_ccusto = :cd_ccusto OR vi_fipe_refeicoes_movel.cd_ccusto = :cd_ccusto)";
+            $query .= "(vi_fipe_refeicoes.cd_ccusto IN ($parametros) OR vi_fipe_refeicoes_movel.cd_ccusto IN ($parametros))";
         }
 
         $query .= " AND (vi_fipe_refeicoes.date_actual >= :ano_mes_inicio OR vi_fipe_refeicoes_movel.date_actual >= :ano_mes_inicio)
@@ -63,14 +74,16 @@ class TotalRefeicoesModel
 
         $stmt = $pgconnection->prepare($query);
 
-        if (!empty($cd_ccusto_filter)) {
-            $stmt->bindParam(':cd_ccusto', $cd_ccusto_filter, PDO::PARAM_STR);
+        $stmt->bindParam(':ano_mes_inicio', $data_inicio, PDO::PARAM_STR);
+        $stmt->bindParam(':ano_mes_fim', $data_fim, PDO::PARAM_STR);
+
+        $filter = '';
+        if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
+            $filter = implode(',', array_map(function ($item) {
+                return "'" . $item . "'";
+            }, $cd_ccusto_filter));
         }
 
-        $stmt->bindParam(':ano_mes_inicio', $ano_mes_inicio, PDO::PARAM_STR);
-        $stmt->bindParam(':ano_mes_fim', $ano_mes_fim, PDO::PARAM_STR);
-
-        $filter = $cd_ccusto_filter;
         $ccusto = null;
 
         if (!empty($filter)) {

@@ -7,10 +7,22 @@ use app\database\PgConnection;
 
 class GetTotalAmountDinnerModel
 {
-    public function getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim)
+    public function getMonthValue($cd_ccusto_filter = [], $ano_mes_inicio, $ano_mes_fim)
     {
-        $pgConnection = new PgConnection();
-        $pgconnection = $pgConnection->Connection();
+
+        $data_inicio = date('Y-m-d', strtotime($ano_mes_inicio . '01'));
+        $data_fim = date('Y-m-d', strtotime($ano_mes_fim . '01'));
+
+        if (!empty($cd_ccusto_filter) && is_array($cd_ccusto_filter)) {
+            $parametros = implode(',', array_map(function ($item) {
+                return "'" . $item . "'";
+            }, $cd_ccusto_filter));
+        } else {
+            $parametros = '';
+        }
+
+        $pgconnection = new PDO("pgsql:dbname=bp_analytics;host=172.32.100.24", "bomprato", "bp050713");
+        $pgconnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $query = "SELECT 
             vi_fipe_refeicoes.id_origem,
@@ -34,11 +46,11 @@ class GetTotalAmountDinnerModel
         if (empty($cd_ccusto_filter)) {
             $query .= "(vi_fipe_refeicoes.cd_ccusto IS NULL OR vi_fipe_refeicoes_movel.cd_ccusto IS NULL)";
         } else {
-            $query .= "(vi_fipe_refeicoes.cd_ccusto = :cd_ccusto OR vi_fipe_refeicoes_movel.cd_ccusto = :cd_ccusto)";
+            $query .= "(vi_fipe_refeicoes.cd_ccusto IN ($parametros) OR vi_fipe_refeicoes_movel.cd_ccusto IN ($parametros))";
         }
 
-        $query .= " AND (vi_fipe_refeicoes.date_actual >= :ano_mes_inicio OR vi_fipe_refeicoes_movel.date_actual >= :ano_mes_inicio)
-            AND (vi_fipe_refeicoes.date_actual <= :ano_mes_fim OR vi_fipe_refeicoes_movel.date_actual <= :ano_mes_fim)
+        $query .= " AND (vi_fipe_refeicoes.date_actual >= '$data_inicio' OR vi_fipe_refeicoes_movel.date_actual >= '$data_fim')
+            AND (vi_fipe_refeicoes.date_actual <= '$data_inicio' OR vi_fipe_refeicoes_movel.date_actual <= '$data_fim')
             GROUP BY 
     vi_fipe_refeicoes.id_origem,
     vi_fipe_refeicoes.cd_ccusto,
@@ -53,15 +65,6 @@ class GetTotalAmountDinnerModel
 ";
 
         $stmt = $pgconnection->prepare($query);
-
-        if (!empty($cd_ccusto_filter)) {
-            $stmt->bindParam(':cd_ccusto', $cd_ccusto_filter, PDO::PARAM_STR);
-        }
-
-        $stmt->bindParam(':ano_mes_inicio', $ano_mes_inicio, PDO::PARAM_STR);
-        $stmt->bindParam(':ano_mes_fim', $ano_mes_fim, PDO::PARAM_STR);
-
-        $filter = $cd_ccusto_filter;
         $ccusto = null;
 
         if (!empty($filter)) {
@@ -71,6 +74,7 @@ class GetTotalAmountDinnerModel
                 $ccusto = "bom_prato";
             }
         }
+
 
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -101,7 +105,7 @@ class GetTotalAmountDinnerModel
                     "cd_ccusto" => $cd_ccusto_movel,
                     "quantitativo" => $qtd_jantar_movel,
                 ];
-            } elseif ($ccusto === null) { // Adicionado novo bloco elseif para tratar ccusto igual a null
+            } elseif ($ccusto === null) { 
                 $data[] = [
                     "id_origem" => $id_origem,
                     "date_actual" => $date_actual,

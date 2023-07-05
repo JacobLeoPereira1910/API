@@ -4,9 +4,9 @@ namespace app\controllers;
 
 use Exception;
 use app\models\UserModel;
-use app\models\GetTotalAmountLunchModel;
+use app\models\GetTotalAmountProcessesCCustoSegModel;
 
-class GetTotalAmountLunchController
+class GetTotalAmountProcessesCCustoSegController
 {
     public function getTokenFromRequest()
     {
@@ -60,7 +60,7 @@ class GetTotalAmountLunchController
 
             $cd_ccusto_filter = $this->getParameter('cd_ccusto');
 
-            $model = new GetTotalAmountLunchModel();
+            $model = new GetTotalAmountProcessesCCustoSegModel();
             $result = $model->getMonthValue($cd_ccusto_filter, $ano_mes_inicio, $ano_mes_fim);
 
             $this->sendResponse($result);
